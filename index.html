@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>webSocket</title>
+
+	<script src="public/vendor/jquery/jquery.min.js"></script>
+	<script src="public/vendor/jquery/jquery.tmpl.min.js"></script>
+	<style>
+		
+		html, body {
+			margin: 0 0 0 0;
+			height: 100%;
+			width: 100%;
+			background-color: #eee;
+		}
+
+		.container {
+			width: 80%;
+			height: 100%;
+			margin: auto;
+		}
+		
+		.message-frame {
+			width: 756px;
+			height: 602px;
+			background-color: #fff;
+			border-radius: 6px;
+			margin: auto;
+		}
+
+		.message-frame > div {
+			width: 100%;
+		} 
+
+		.message-frame-top {
+			height: 60px;
+			border-bottom: 1px solid #ddd;
+		}
+
+		.message-frame-header {
+			position: absolute;
+			margin: 5px 6px 5px 6px;
+			vertical-align: middle;
+		}
+
+		.message-avatar {
+			border-radius: 50%;
+			border: 1px solid #ccc;
+			display: block;
+		}
+
+		.message-avatar-md {
+			width: 50px;
+			height: 50px;
+		}
+
+		.message-avatar-sm {
+			width: 36px;
+			height: 36px;
+		}
+
+		.message-avatar-xs {
+			width: 30px;
+			height: 30px;
+		}
+
+
+		.message-frame-body {
+			height: 541px;
+		}
+
+		.message-frame-body > div {
+			float: left;
+			height: 100%;
+		}
+
+		.message-frame-body > div:not(:first-child) {
+			border-left: 1px solid #ddd;
+		}
+
+		.message-frame-left {
+			width: 169px;
+		}
+
+		.message-frame-right {
+			width: 584px;
+		}
+
+		.message-frame-right > div {
+			width: 100%;
+			float: left;
+		}
+
+		.message-frame-right > div:not(:first-child) {
+			border-top: 1px solid #ddd;
+		}
+
+		.message-room-box {
+			height: 400px;
+			overflow-y: auto;
+		}
+
+		.message-room-editor {
+			height: 140px;
+			word-break:break-all;
+			padding: 2px 6px 2px 2px;
+		}
+		
+		.message-btn {
+			margin-top: -36px;
+			display: block;
+			float: right;
+		}
+
+		.message-item-container {
+			width: 76%;
+			padding: 16px 6px 6px 6px; 
+			height: auto;
+			display: table;
+		}
+
+		.message-item-notify {
+			padding: 16px 6px 6px 6px;
+		}
+
+		.message-item-notify-text {
+			text-align: center;
+			line-height: 12px;
+			font-size: 12px;
+			color: #777;
+		}
+
+
+		.message-item-box {
+			display: table;
+		}
+
+		.message-item-box > div {
+			float: left;
+		}
+
+		.message-item-username {
+			margin-left: 6px; 
+			line-height: 14px;
+			font-size: 14px;
+			color: #555;
+			width: 120px;
+		}
+
+		.message-item-time {
+			margin: 1px 0 0 6px; 
+			line-height: 14px;
+			font-size: 12px;
+			vertical-align: middle;
+			color: #555;
+			width: 140px;
+		}
+
+		.message-item-content {
+			word-break:break-all;
+			max-width: 100%;
+			width: auto;
+			margin-top: -16px; 
+			margin-left: 42px; 
+			color: #666;
+			border-radius: 6px;
+			background-color: #eee;
+			padding: 6px 6px 6px 6px;
+		}
+
+		.clear-fix {
+			clear: both;
+		}
+
+		.text-over-hidden {
+			overflow: hidden; 
+			white-space: nowrap; 
+			text-overflow: ellipsis;
+		}
+
+	</style>
+
+
+</head>
+<body>
+
+	<div class="container">
+		
+		<div class="message-frame">
+			<div class="message-frame-top">
+				<div class="message-frame-header">
+					<img src="public/img/avatar1.jpg" alt="avatar" class="message-avatar message-avatar-md">
+				</div>
+			</div>
+			<div class="message-frame-body">
+				<div class="message-frame-left">
+					
+				</div>
+				<div class="message-frame-right">
+					<div class="message-room-box">
+
+												
+						
+					</div>
+					<div class="message-room-editor" contenteditable="true">
+						
+					</div>
+					<button id="sendBtn" class="message-btn" data-target="">send</button>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	
+	<script id="message-item" type="text/x-jquery-tmpl">
+		<div class="message-item-container">
+			<div class="message-item-box">
+				<div>
+					<img src="${ user.avatar }" alt="avatar" class="message-avatar message-avatar-sm">
+				</div>
+				<div class="message-item-username text-over-hidden">
+					${ user.username }
+				</div>
+				<div class="message-item-time">
+					${ package.time }
+				</div>
+			</div>
+			<div class="message-item-content">
+				${ package.data }
+			</div>
+			<div class="clear-fix"></div>
+		</div>
+	</script>
+
+	<script id="message-notify" type="text/x-jquery-tmpl">
+		<div class="message-item-notify text-over-hidden">
+			<div class="message-item-notify-text text-over-hidden">-- ${ user.username } ${ package.data } --</div>
+		</div>
+	</script>
+
+	<script>
+		var ws = new WebSocket('ws://127.0.0.1:9501');
+		var container, user;
+
+
+		// socket on open
+		ws.onopen = function (data) {
+			container = $(".message-room-box");
+		};
+
+		// socket on message
+		ws.onmessage = function (data) {
+
+			var response = JSON.parse(data.data);
+			
+			if (user == 'undefined') {
+				user = response.user;
+				renderProfile(user);
+			}
+			
+			if (response.package.type === 'message') {
+				$("#message-item").tmpl(response).appendTo(container);
+			} else {
+				$("#message-notify").tmpl(response).appendTo(container);
+			}
+
+
+		};
+
+		ws.onerror = function (data) {
+			console.log('error.', data);
+		};
+
+		ws.onclose = function (data) {
+			console.log('close.', data);
+		};
+
+		$("#sendBtn").on('click', function () {			
+			ws.send($(".message-room-editor").text());
+			$(".message-room-editor").text("")
+		});
+
+		function renderProfile(user) {
+			$(".message-frame-header").find('img').attr('src', user.avatar);
+		}
+
+
+	</script>
+
+
+</body>
+</html>
