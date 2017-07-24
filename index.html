@@ -241,12 +241,12 @@
 
 	<script>
 		var ws = new WebSocket('ws://127.0.0.1:9501');
-		var container, user;
-
+		var container, user, editor;
 
 		// socket on open
 		ws.onopen = function (data) {
 			container = $(".message-room-box");
+            editor = $(".message-room-editor");
 		};
 
 		// socket on message
@@ -254,7 +254,7 @@
 
 			var response = JSON.parse(data.data);
 			
-			if (user == 'undefined') {
+			if (user === 'undefined') {
 				user = response.user;
 				renderProfile(user);
 			}
@@ -277,8 +277,8 @@
 		};
 
 		$("#sendBtn").on('click', function () {			
-			ws.send($(".message-room-editor").text());
-			$(".message-room-editor").text("")
+			ws.send(editor.text());
+			editor.text("");
 		});
 
 		function renderProfile(user) {
