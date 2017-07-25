@@ -1,0 +1,16 @@
+{
+    "name": "root/ws",
+    "description": "websocket and swoole real time chatting room",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "liuquan",
+            "email": "1009041210@qq.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.0"
+    }
+}
